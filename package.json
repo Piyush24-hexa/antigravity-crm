@@ -1,0 +1,25 @@
+{
+  "name": "antigravity",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "cd packages/db && npx prisma generate",
+    "db:migrate": "cd packages/db && npx prisma migrate dev",
+    "db:push": "cd packages/db && npx prisma db push",
+    "db:seed": "cd packages/db && npx tsx prisma/seed.ts",
+    "db:studio": "cd packages/db && npx prisma studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.5.0"
+  },
+  "packageManager": "npm@10.0.0"
+}
