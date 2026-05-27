@@ -85,18 +85,42 @@ export class DealService {
     const stage = await prisma.stage.findUnique({ where: { id: stageId } });
     if (!stage) throw new Error('Stage not found');
 
-    return prisma.deal.update({
+    const status = stage.winProbability === 1.0 ? 'won' : stage.winProbability === 0.0 && stage.displayOrder > 0 ? 'lost' : 'open';
+
+    const updatedDeal = await prisma.deal.update({
       where: { id },
       data: {
         stageId,
         winProbability: stage.winProbability,
-        status: stage.winProbability === 1.0 ? 'won' : stage.winProbability === 0.0 && stage.displayOrder > 0 ? 'lost' : 'open',
+        status,
         updatedAt: new Date(),
       },
       include: {
         stage: { select: { name: true, color: true } },
       },
     });
+
+    if (status === 'won') {
+      try {
+        await prisma.salesOrder.create({
+          data: {
+            workspaceId: updatedDeal.workspaceId,
+            dealId: updatedDeal.id,
+            billingCompanyId: updatedDeal.companyId,
+            orderNumber: `SO-${Date.now().toString().slice(-6)}`,
+            status: 'draft',
+            subtotal: updatedDeal.value || 0,
+            taxAmount: 0,
+            totalAmount: updatedDeal.value || 0,
+            currency: updatedDeal.currency || 'USD',
+          }
+        });
+      } catch (err) {
+        console.error('Failed to auto-create Sales Order:', err);
+      }
+    }
+
+    return updatedDeal;
   }
 
   async getTimeline(dealId: string) {

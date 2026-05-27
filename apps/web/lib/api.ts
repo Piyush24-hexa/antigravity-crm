@@ -97,3 +97,33 @@ export const reportsApi = {
   leaderboard: () => apiFetch<{ data: unknown[] }>('/reports/leaderboard'),
   activities: () => apiFetch<{ data: unknown[] }>('/reports/activities'),
 };
+
+// ─── Sales Orders ───
+export const salesOrdersApi = {
+  list: (params?: Record<string, string | number | boolean | undefined>) =>
+    apiFetch<{ data: unknown[]; meta: unknown }>('/sales-orders', { params }),
+  get: (id: string) => apiFetch<{ data: unknown }>(`/sales-orders/${id}`),
+  create: (body: unknown) => apiFetch<{ data: unknown }>('/sales-orders', { method: 'POST', body }),
+  update: (id: string, body: unknown) => apiFetch<{ data: unknown }>(`/sales-orders/${id}`, { method: 'PATCH', body }),
+  delete: (id: string) => apiFetch<void>(`/sales-orders/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Invoices ───
+export const invoicesApi = {
+  list: (params?: Record<string, string | number | boolean | undefined>) =>
+    apiFetch<{ data: unknown[]; meta: unknown }>('/invoices', { params }),
+  get: (id: string) => apiFetch<{ data: unknown }>(`/invoices/${id}`),
+  create: (body: unknown) => apiFetch<{ data: unknown }>('/invoices', { method: 'POST', body }),
+  update: (id: string, body: unknown) => apiFetch<{ data: unknown }>(`/invoices/${id}`, { method: 'PATCH', body }),
+  delete: (id: string) => apiFetch<void>(`/invoices/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Payments ───
+export const paymentsApi = {
+  list: (params?: Record<string, string | number | boolean | undefined>) =>
+    apiFetch<{ data: unknown[]; meta: unknown }>('/payments', { params }),
+  get: (id: string) => apiFetch<{ data: unknown }>(`/payments/${id}`),
+  create: (body: unknown) => apiFetch<{ data: unknown }>('/payments', { method: 'POST', body }),
+  update: (id: string, body: unknown) => apiFetch<{ data: unknown }>(`/payments/${id}`, { method: 'PATCH', body }),
+  delete: (id: string) => apiFetch<void>(`/payments/${id}`, { method: 'DELETE' }),
+};

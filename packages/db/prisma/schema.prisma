@@ -55,6 +55,12 @@ model Workspace {
   auditLogs       AuditLog[]
   dealStageHistory DealStageHistory[]
   quotas          Quota[]
+  salesOrders     SalesOrder[]
+  salesOrderLines SalesOrderLine[]
+  invoices        Invoice[]
+  invoiceLines    InvoiceLine[]
+  payments        Payment[]
+
   @@map("workspaces")
 }
 
@@ -184,6 +190,7 @@ model Company {
   contacts  Contact[]
   deals     Deal[]
   activities Activity[]
+  invoices   Invoice[]
 
   @@index([workspaceId])
   @@map("companies")
@@ -268,6 +275,7 @@ model Deal {
   dealContacts    DealContact[]
   quotes          Quote[]
   stageHistory    DealStageHistory[]
+  salesOrders     SalesOrder[]
 
   @@index([workspaceId, stageId])
   @@index([workspaceId, ownerId])
@@ -685,4 +693,139 @@ model Quota {
 
   @@index([workspaceId, userId, period])
   @@map("quotas")
+}
+// ---------------------------------------
+// PHASE 1: SALES ORDERS
+// ---------------------------------------
+
+model SalesOrder {
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId       String   @map("workspace_id") @db.Uuid
+  dealId            String   @map("deal_id") @db.Uuid
+  quoteId           String?  @map("quote_id") @db.Uuid
+  orderNumber       String   @map("order_number") @db.VarChar(100)
+  status            String   @default("draft") @db.VarChar(50) // draft|confirmed|in_production|shipped|invoiced|cancelled
+  billingCompanyId  String?  @map("billing_company_id") @db.Uuid
+  shippingCompanyId String?  @map("shipping_company_id") @db.Uuid
+  
+  subtotal          Decimal  @default(0) @db.Decimal(15, 2)
+  taxAmount         Decimal  @default(0) @map("tax_amount") @db.Decimal(15, 2)
+  totalAmount       Decimal  @default(0) @map("total_amount") @db.Decimal(15, 2)
+  currency          String   @default("USD") @db.VarChar(3)
+  notes             String?  @db.Text
+
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deal              Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  lines             SalesOrderLine[]
+  invoices          Invoice[]
+
+  @@index([workspaceId])
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId   String   @map("workspace_id") @db.Uuid
+  salesOrderId  String   @map("sales_order_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  
+  quantity      Int      @default(1)
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(15, 2)
+  discount      Decimal  @default(0) @db.Decimal(15, 2)
+  taxRate       Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  lineTotal     Decimal  @map("line_total") @db.Decimal(15, 2)
+
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  salesOrder    SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, salesOrderId])
+  @@map("sales_order_lines")
+}
+
+// ---------------------------------------
+// PHASE 2: INVOICING + PAYMENTS
+// ---------------------------------------
+
+model Invoice {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId     String   @map("workspace_id") @db.Uuid
+  salesOrderId    String?  @map("sales_order_id") @db.Uuid
+  companyId       String   @map("company_id") @db.Uuid
+  invoiceNumber   String   @map("invoice_number") @db.VarChar(100)
+  status          String   @default("draft") @db.VarChar(50) // draft|sent|viewed|partial|paid|overdue|void
+  
+  issueDate       DateTime @map("issue_date") @db.Date
+  dueDate         DateTime @map("due_date") @db.Date
+  paidAt          DateTime? @map("paid_at") @db.Timestamptz()
+  
+  subtotal        Decimal  @default(0) @db.Decimal(15, 2)
+  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(15, 2)
+  totalAmount     Decimal  @default(0) @map("total_amount") @db.Decimal(15, 2)
+  amountPaid      Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  balanceDue      Decimal  @default(0) @map("balance_due") @db.Decimal(15, 2)
+  
+  currency        String   @default("USD") @db.VarChar(3)
+  exchangeRate    Decimal? @map("exchange_rate") @db.Decimal(10, 6)
+  notes           String?  @db.Text
+
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  workspace       Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  company         Company     @relation(fields: [companyId], references: [id])
+  lines           InvoiceLine[]
+  payments        Payment[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, companyId])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  invoiceId   String   @map("invoice_id") @db.Uuid
+  productId   String?  @map("product_id") @db.Uuid
+  description String   @db.Text
+  
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(15, 2)
+  discount    Decimal  @default(0) @db.Decimal(15, 2)
+  taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  lineTotal     Decimal  @map("line_total") @db.Decimal(15, 2)
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, invoiceId])
+  @@map("invoice_lines")
+}
+
+model Payment {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId     String   @map("workspace_id") @db.Uuid
+  invoiceId       String   @map("invoice_id") @db.Uuid
+  
+  amount          Decimal  @db.Decimal(15, 2)
+  method          String   @db.VarChar(50) // bank_transfer|card|cheque|cash|crypto
+  referenceNumber String?  @map("reference_number") @db.VarChar(100)
+  status          String   @default("pending") @db.VarChar(50) // pending|cleared|bounced|refunded
+  paidAt          DateTime @map("paid_at") @db.Timestamptz()
+  notes           String?  @db.Text
+
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invoice         Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, invoiceId])
+  @@map("payments")
 }
