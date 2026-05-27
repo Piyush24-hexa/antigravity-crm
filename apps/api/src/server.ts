@@ -14,6 +14,7 @@ import { activityRoutes } from './routes/activities';
 import { salesOrdersRoutes } from './routes/sales-orders';
 import { invoicesRoutes } from './routes/invoices';
 import { paymentsRoutes } from './routes/payments';
+import { workOrderRoutes } from './routes/work-orders';
 import { reportRoutes } from './routes/reports';
 
 const PORT = Number(process.env['API_PORT'] ?? 3001);
@@ -71,6 +72,7 @@ async function bootstrap() {
   await app.register(salesOrdersRoutes, { prefix: '/sales-orders' });
   await app.register(invoicesRoutes, { prefix: '/invoices' });
   await app.register(paymentsRoutes, { prefix: '/payments' });
+  await app.register(workOrderRoutes, { prefix: '/work-orders' });
   await app.register(reportRoutes, { prefix: '/reports' });
 
   // ─── Swagger docs ───

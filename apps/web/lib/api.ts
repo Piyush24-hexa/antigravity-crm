@@ -127,3 +127,13 @@ export const paymentsApi = {
   update: (id: string, body: unknown) => apiFetch<{ data: unknown }>(`/payments/${id}`, { method: 'PATCH', body }),
   delete: (id: string) => apiFetch<void>(`/payments/${id}`, { method: 'DELETE' }),
 };
+
+// ─── Work Orders ───
+export const workOrdersApi = {
+  list: (params?: Record<string, string | number | boolean | undefined>) =>
+    apiFetch<{ data: unknown[]; meta: unknown }>('/work-orders', { params }),
+  get: (id: string) => apiFetch<{ data: unknown }>(`/work-orders/${id}`),
+  create: (body: unknown) => apiFetch<{ data: unknown }>('/work-orders', { method: 'POST', body }),
+  updateProgress: (id: string, body: unknown) => apiFetch<{ data: unknown }>(`/work-orders/${id}/progress`, { method: 'PATCH', body }),
+  addLog: (id: string, body: unknown) => apiFetch<{ data: unknown }>(`/work-orders/${id}/logs`, { method: 'POST', body }),
+};

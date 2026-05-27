@@ -34,6 +34,11 @@ const WORKSPACE_MODELS = new Set<Prisma.ModelName>([
   'Invoice',
   'InvoiceLine',
   'Payment',
+  'BOM',
+  'BOMLine',
+  'WorkOrder',
+  'WorkOrderLog',
+  'DeliveryOrder',
 ]);
 
 type MiddlewareParams = Prisma.MiddlewareParams;

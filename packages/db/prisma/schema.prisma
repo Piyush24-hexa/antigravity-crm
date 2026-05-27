@@ -60,6 +60,11 @@ model Workspace {
   invoices        Invoice[]
   invoiceLines    InvoiceLine[]
   payments        Payment[]
+  boms            BOM[]
+  bomLines        BOMLine[]
+  workOrders      WorkOrder[]
+  workOrderLogs   WorkOrderLog[]
+  deliveryOrders  DeliveryOrder[]
 
   @@map("workspaces")
 }
@@ -520,6 +525,9 @@ model Product {
 
   workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   priceBooks  PriceBookEntry[]
+  boms        BOM[]
+  bomLines    BOMLine[]
+  workOrders  WorkOrder[]
 
   @@index([workspaceId])
   @@map("products")
@@ -721,6 +729,8 @@ model SalesOrder {
   deal              Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
   lines             SalesOrderLine[]
   invoices          Invoice[]
+  workOrders        WorkOrder[]
+  deliveryOrders    DeliveryOrder[]
 
   @@index([workspaceId])
   @@map("sales_orders")
@@ -828,4 +838,115 @@ model Payment {
 
   @@index([workspaceId, invoiceId])
   @@map("payments")
+}
+
+// ---------------------------------------
+// PHASE 4: PRODUCTION
+// ---------------------------------------
+
+model BOM {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  version     String   @default("1.0") @db.VarChar(50)
+  active      Boolean  @default(true)
+  
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  lines       BOMLine[]
+
+  @@index([workspaceId, productId])
+  @@map("boms")
+}
+
+model BOMLine {
+  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId        String   @map("workspace_id") @db.Uuid
+  bomId              String   @map("bom_id") @db.Uuid
+  componentProductId String   @map("component_product_id") @db.Uuid
+  
+  quantity           Decimal  @db.Decimal(15, 4)
+  unit               String   @db.VarChar(50)
+  scrapPercent       Decimal  @default(0) @map("scrap_percent") @db.Decimal(5, 2)
+  
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  bom                BOM       @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  componentProduct   Product   @relation(fields: [componentProductId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, bomId])
+  @@map("bom_lines")
+}
+
+model WorkOrder {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId  String   @map("workspace_id") @db.Uuid
+  woNumber     String   @map("wo_number") @db.VarChar(100)
+  salesOrderId String   @map("sales_order_id") @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  
+  status       String   @default("pending") @db.VarChar(50) // pending|released|in_progress|qc|completed|cancelled
+  
+  plannedQty   Int      @map("planned_qty")
+  completedQty Int      @default(0) @map("completed_qty")
+  rejectedQty  Int      @default(0) @map("rejected_qty")
+  
+  plannedStart DateTime? @map("planned_start") @db.Timestamptz()
+  plannedEnd   DateTime? @map("planned_end") @db.Timestamptz()
+  actualStart  DateTime? @map("actual_start") @db.Timestamptz()
+  actualEnd    DateTime? @map("actual_end") @db.Timestamptz()
+  
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  salesOrder   SalesOrder     @relation(fields: [salesOrderId], references: [id])
+  product      Product        @relation(fields: [productId], references: [id])
+  logs         WorkOrderLog[]
+
+  @@index([workspaceId])
+  @@map("work_orders")
+}
+
+model WorkOrderLog {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  workOrderId String   @map("work_order_id") @db.Uuid
+  
+  type        String   @db.VarChar(50) // status_change|qc_check|qty_update|note
+  notes       String   @db.Text
+  
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, workOrderId])
+  @@map("work_order_logs")
+}
+
+model DeliveryOrder {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId     String   @map("workspace_id") @db.Uuid
+  salesOrderId    String   @map("sales_order_id") @db.Uuid
+  
+  trackingNumber  String?  @map("tracking_number") @db.VarChar(255)
+  carrierName     String?  @map("carrier_name") @db.VarChar(255)
+  shippedAt       DateTime? @map("shipped_at") @db.Timestamptz()
+  deliveredAt     DateTime? @map("delivered_at") @db.Timestamptz()
+  
+  status          String   @default("pending") @db.VarChar(50) // pending|packed|shipped|in_transit|delivered|returned
+  
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  workspace       Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  salesOrder      SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("delivery_orders")
 }

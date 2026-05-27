@@ -7,7 +7,7 @@ import {
   Users, Building2, HandCoins, Kanban, BarChart3, Settings, Zap,
   Mail, Bot, ChevronLeft, ChevronRight, Search, Bell, Plus,
   Shield, Briefcase, User, Clock, Calendar, FileText, LayoutDashboard,
-  ShoppingCart, Receipt, CreditCard
+  ShoppingCart, Receipt, CreditCard, Factory
 } from 'lucide-react';
 import { useAppStore, type UserRole } from '../../lib/store';
 
@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   { href: '/deals', label: 'Deals', icon: HandCoins, roles: ['admin', 'manager', 'employee'] },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban, roles: ['admin', 'manager'] },
   { href: '/sales-orders', label: 'Sales Orders', icon: ShoppingCart, roles: ['admin', 'manager', 'employee'] },
+  { href: '/production', label: 'Production', icon: Factory, roles: ['admin', 'manager'] },
   { href: '/invoices', label: 'Invoices', icon: Receipt, roles: ['admin', 'manager'] },
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['admin', 'manager'] },
   { href: '/inbox', label: 'Inbox', icon: Mail, roles: ['admin', 'manager', 'employee'] },

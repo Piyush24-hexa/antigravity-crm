@@ -8,3 +8,4 @@ export * from './schemas/activity';
 export * from './schemas/sales-order';
 export * from './schemas/invoice';
 export * from './schemas/payment';
+export * from './schemas/work-order';
