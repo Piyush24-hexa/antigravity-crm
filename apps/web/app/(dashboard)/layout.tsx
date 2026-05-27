@@ -20,7 +20,7 @@ const navItems: NavItem[] = [
   { href: '/deals', label: 'Deals', icon: HandCoins, roles: ['admin', 'manager', 'employee'] },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban, roles: ['admin', 'manager'] },
   { href: '/sales-orders', label: 'Sales Orders', icon: ShoppingCart, roles: ['admin', 'manager', 'employee'] },
-  { href: '/production', label: 'Production', icon: Factory, roles: ['admin', 'manager'] },
+  { href: '/production', label: 'Production', icon: Factory, roles: ['admin', 'manager', 'production_manager', 'research', 'design', 'manufacturing', 'employee'] },
   { href: '/invoices', label: 'Invoices', icon: Receipt, roles: ['admin', 'manager'] },
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['admin', 'manager'] },
   { href: '/inbox', label: 'Inbox', icon: Mail, roles: ['admin', 'manager', 'employee'] },
@@ -131,25 +131,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             {/* Role Switcher */}
             {mounted && (
-              <div className="flex items-center bg-surface-100 p-1 rounded-lg border border-surface-200">
-                <button 
-                  onClick={() => setRole('admin')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${role === 'admin' ? 'bg-white shadow text-brand-500' : 'text-surface-500 hover:text-surface-900'}`}
+              <div className="flex items-center bg-surface-100 px-2 py-1 rounded-lg border border-surface-200">
+                <Shield size={14} className="text-surface-500 mr-2" />
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  className="bg-transparent text-sm font-semibold text-surface-700 outline-none cursor-pointer"
                 >
-                  <Shield size={12} /> Admin
-                </button>
-                <button 
-                  onClick={() => setRole('manager')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${role === 'manager' ? 'bg-white shadow text-brand-500' : 'text-surface-500 hover:text-surface-900'}`}
-                >
-                  <Briefcase size={12} /> Manager
-                </button>
-                <button 
-                  onClick={() => setRole('employee')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${role === 'employee' ? 'bg-white shadow text-brand-500' : 'text-surface-500 hover:text-surface-900'}`}
-                >
-                  <User size={12} /> Employee
-                </button>
+                  <option value="admin">Admin</option>
+                  <option value="manager">Main Manager</option>
+                  <option value="production_manager">Production Manager</option>
+                  <option value="research">Research Team</option>
+                  <option value="design">Design Team</option>
+                  <option value="manufacturing">Manufacturing Team</option>
+                  <option value="employee">Employee</option>
+                </select>
               </div>
             )}
 

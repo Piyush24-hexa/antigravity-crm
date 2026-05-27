@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { workOrdersApi } from '../../../../lib/api';
-import { Loader2, ArrowLeft, CheckCircle2, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertTriangle, MessageSquare, Lock } from 'lucide-react';
 import Link from 'next/link';
+import { useAppStore } from '../../../../lib/store';
 
 export default function WorkOrderDetailPage({ params }: { params: { id: string } }) {
   const [wo, setWo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState('');
   const [qcNotes, setQcNotes] = useState('');
+  const { role } = useAppStore();
+  const canEdit = role !== 'employee';
 
   const loadData = () => {
     setLoading(true);
@@ -84,34 +87,43 @@ export default function WorkOrderDetailPage({ params }: { params: { id: string }
               />
             </div>
 
-            <div className="flex gap-3">
-              <input 
-                type="number" 
-                placeholder="Qty produced" 
-                value={qty} 
-                onChange={e => setQty(e.target.value)} 
-                className="input-field w-32"
-              />
-              <button className="btn-primary" onClick={handleUpdateQty}>Log Production</button>
-            </div>
+            {canEdit ? (
+              <div className="flex gap-3">
+                <input 
+                  type="number" 
+                  placeholder="Qty produced" 
+                  value={qty} 
+                  onChange={e => setQty(e.target.value)} 
+                  className="input-field w-32"
+                />
+                <button className="btn-primary" onClick={handleUpdateQty}>Log Production</button>
+              </div>
+            ) : (
+              <div className="bg-surface-50 border border-surface-200 rounded-lg p-3 text-sm flex items-center gap-2 text-surface-500">
+                <Lock size={16} /> Employees cannot log production quantities.
+              </div>
+            )}
           </div>
 
           <div className="glass-card p-6">
             <h2 className="text-lg font-bold mb-4">Activity & QC Log</h2>
-            <div className="flex gap-3 mb-6">
-              <input 
-                className="input-field flex-1"
-                placeholder="Add a QC note or issue..." 
-                value={qcNotes} 
-                onChange={e => setQcNotes(e.target.value)} 
-              />
-              <button className="px-4 py-2 bg-surface-200 hover:bg-surface-300 text-surface-700 font-medium rounded-lg text-sm flex items-center gap-2" onClick={() => handleAddLog('note')}>
-                <MessageSquare className="w-4 h-4" /> Note
-              </button>
-              <button className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg text-sm flex items-center gap-2" onClick={() => handleAddLog('qc_check')}>
-                <AlertTriangle className="w-4 h-4" /> Flag Issue
-              </button>
-            </div>
+            
+            {canEdit && (
+              <div className="flex gap-3 mb-6">
+                <input 
+                  className="input-field flex-1"
+                  placeholder="Add a QC note or issue..." 
+                  value={qcNotes} 
+                  onChange={e => setQcNotes(e.target.value)} 
+                />
+                <button className="px-4 py-2 bg-surface-200 hover:bg-surface-300 text-surface-700 font-medium rounded-lg text-sm flex items-center gap-2" onClick={() => handleAddLog('note')}>
+                  <MessageSquare className="w-4 h-4" /> Note
+                </button>
+                <button className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg text-sm flex items-center gap-2" onClick={() => handleAddLog('qc_check')}>
+                  <AlertTriangle className="w-4 h-4" /> Flag Issue
+                </button>
+              </div>
+            )}
 
             <div className="space-y-4">
               {wo.logs?.map((log: any) => (
