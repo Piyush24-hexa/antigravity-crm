@@ -1,10 +1,20 @@
 'use client';
 
 import { useAppStore } from '../../../lib/store';
-import { demoDeals, demoDailyReports, demoLeaderboard, demoRevenueData } from '../../../lib/demo-data';
-import { Calendar, LayoutDashboard, Target, Users, TrendingUp, CheckCircle2, Clock, Info } from 'lucide-react';
+import { demoDeals, demoDailyReports, demoLeaderboard } from '../../../lib/demo-data';
+import {
+  Target, Users, TrendingUp, CheckCircle2, Clock,
+  ArrowUpRight, ArrowDownRight, ChevronRight,
+  Briefcase, Activity, BarChart3
+} from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '../../../lib/utils';
+
+const STATUS_DOT: Record<string, string> = {
+  open: '#0ab5a0',
+  won: '#16a34a',
+  lost: '#dc2626',
+};
 
 export default function OverviewPage() {
   const { role } = useAppStore();
@@ -12,108 +22,181 @@ export default function OverviewPage() {
   const activeDeals = demoDeals.filter(d => d.status === 'open');
   const pipelineValue = activeDeals.reduce((acc, deal) => acc + deal.value, 0);
 
+  const stats = [
+    {
+      label: 'Active Pipeline',
+      value: formatCurrency(pipelineValue),
+      icon: Target,
+      delta: '+12.4%',
+      up: true,
+      color: '#0ab5a0',
+      bg: '#ecfdf5',
+    },
+    {
+      label: 'Win Rate',
+      value: '64%',
+      icon: CheckCircle2,
+      delta: '+3.2%',
+      up: true,
+      color: '#16a34a',
+      bg: '#f0fdf4',
+    },
+    {
+      label: 'New Leads',
+      value: '12',
+      icon: Users,
+      delta: '-2 vs last week',
+      up: false,
+      color: '#0284c7',
+      bg: '#f0f9ff',
+    },
+    {
+      label: 'MRR Growth',
+      value: '+14.2%',
+      icon: TrendingUp,
+      delta: 'vs last month',
+      up: true,
+      color: '#7c3aed',
+      bg: '#faf5ff',
+    },
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-900">Welcome back!</h1>
-        <p className="text-surface-500 mt-1">Here is what's happening across the CRM today.</p>
+    <div className="animate-fade-in space-y-6 max-w-[1400px]">
+
+      {/* Page Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Good morning 👋</h1>
+          <p className="page-subtitle">Here's what's happening across your business today.</p>
+        </div>
+        {role === 'employee' && (
+          <Link href="/daily-report">
+            <button className="btn-primary">
+              <Activity size={14} />
+              Submit Daily Report
+            </button>
+          </Link>
+        )}
       </div>
 
-      {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="stat-card">
-          <span className="stat-label flex items-center gap-2"><Target size={14}/> Active Pipeline</span>
-          <span className="stat-value text-brand-500">{formatCurrency(pipelineValue)}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label flex items-center gap-2"><CheckCircle2 size={14}/> Win Rate</span>
-          <span className="stat-value text-accent-green">64%</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label flex items-center gap-2"><Users size={14}/> New Leads</span>
-          <span className="stat-value text-accent-purple">12</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label flex items-center gap-2"><TrendingUp size={14}/> MRR Growth</span>
-          <span className="stat-value text-accent-cyan">+14.2%</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Left Column: Recent Daily Reports & Activities */}
-        <div className="xl:col-span-2 space-y-6">
-          <div className="glass-card p-6 border-l-4 border-l-brand-500">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2 text-surface-900 font-bold">
-                <LayoutDashboard size={20} className="text-brand-500"/>
-                <h3>Today's Team Pulse</h3>
-              </div>
-              <Link href="/manager-view" className="text-sm font-semibold text-brand-500 hover:text-brand-600 flex items-center gap-1">
-                Open Full Gantt View &rarr;
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {demoDailyReports.slice(0, 3).map((report, idx) => (
-                <div key={report.id} className="p-4 bg-surface-50 rounded-xl border border-surface-200 hover:border-brand-200 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-surface-900">{report.employeeName}</span>
-                    <span className="text-xs text-surface-500 font-medium flex items-center gap-1"><Clock size={12}/> {report.timeEntries.length} Tasks Logged</span>
-                  </div>
-                  <p className="text-sm text-surface-600 line-clamp-2">{report.description}</p>
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {stats.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="card p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg" style={{ background: s.bg }}>
+                  <Icon size={16} style={{ color: s.color }} />
                 </div>
-              ))}
-            </div>
-            {role === 'employee' && (
-              <div className="mt-4 text-center">
-                <Link href="/daily-report">
-                  <button className="btn-primary w-full shadow-md">
-                    Submit My Daily Report
-                  </button>
-                </Link>
+                <span className={s.up ? 'stat-delta-up flex items-center gap-0.5' : 'stat-delta-down flex items-center gap-0.5'}>
+                  {s.up ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                  {s.delta}
+                </span>
               </div>
-            )}
-          </div>
+              <div className="stat-label">{s.label}</div>
+              <div className="stat-value mt-1" style={{ color: s.color }}>{s.value}</div>
+            </div>
+          );
+        })}
+      </div>
 
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-surface-900">Pipeline Snapshot</h3>
-              <Link href="/pipeline" className="text-sm font-semibold text-brand-500 hover:text-brand-600">
-                View Board &rarr;
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+        {/* Left: Team Pulse + Pipeline */}
+        <div className="xl:col-span-2 space-y-5">
+
+          {/* Team Pulse */}
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-5 rounded-full bg-teal-500" />
+                <h3 className="font-semibold text-slate-900 text-sm">Team Pulse — Today</h3>
+              </div>
+              <Link href="/manager-view" className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1 transition-colors">
+                Full Gantt <ChevronRight size={13} />
               </Link>
             </div>
-            <div className="space-y-3">
-              {activeDeals.slice(0, 4).map(deal => (
-                <div key={deal.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-surface-50 transition-colors cursor-pointer border border-transparent hover:border-surface-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: deal.stage.color }}></div>
-                    <div>
-                      <p className="text-sm font-bold text-surface-900">{deal.title}</p>
-                      <p className="text-xs text-surface-500">{deal.company.name}</p>
-                    </div>
+            <div className="divide-y divide-slate-50">
+              {demoDailyReports.slice(0, 3).map((report) => (
+                <div key={report.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-semibold text-slate-900">{report.employeeName}</span>
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                      <Clock size={11} />
+                      {report.timeEntries.length} tasks logged
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-surface-800">{formatCurrency(deal.value)}</span>
+                  <p className="text-xs text-slate-500 line-clamp-1 leading-relaxed">{report.description}</p>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Pipeline Snapshot */}
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-5 rounded-full bg-blue-500" />
+                <h3 className="font-semibold text-slate-900 text-sm">Pipeline Snapshot</h3>
+              </div>
+              <Link href="/pipeline" className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1 transition-colors">
+                View Board <ChevronRight size={13} />
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-50">
+              {activeDeals.slice(0, 5).map(deal => (
+                <div key={deal.id} className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_DOT[deal.status] || '#94a3b8' }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{deal.title}</p>
+                    <p className="text-xs text-slate-500 truncate">{deal.company.name}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-bold text-slate-900">{formatCurrency(deal.value)}</div>
+                    <div className="text-[11px] text-slate-400">{deal.stage.name}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-5 py-3 border-t border-slate-50 bg-slate-50">
+              <div className="flex justify-between text-xs text-slate-500 font-medium">
+                <span>{activeDeals.length} open deals</span>
+                <span className="font-semibold text-slate-700">{formatCurrency(pipelineValue)} total</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Right Column: Leaderboard & Quick Links */}
-        <div className="space-y-6">
-          <div className="glass-card p-6">
-            <h3 className="font-bold text-surface-900 mb-4">Top Performers</h3>
-            <div className="space-y-4">
+        {/* Right: Leaderboard + Quick Links */}
+        <div className="space-y-5">
+
+          {/* Leaderboard */}
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-5 rounded-full bg-purple-500" />
+                <h3 className="font-semibold text-slate-900 text-sm">Top Performers</h3>
+              </div>
+              <BarChart3 size={14} className="text-slate-400" />
+            </div>
+            <div className="divide-y divide-slate-50">
               {demoLeaderboard.map((user, idx) => (
-                <div key={user.id} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-surface-200 flex items-center justify-center font-bold text-sm text-surface-700">
+                <div key={user.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                    idx === 0 ? 'bg-amber-100 text-amber-700'
+                    : idx === 1 ? 'bg-slate-100 text-slate-600'
+                    : 'bg-orange-50 text-orange-600'
+                  }`}>
                     {idx + 1}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-surface-900">{user.name}</p>
-                    <p className="text-xs text-surface-500">{user.deals} deals won</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
+                    <p className="text-xs text-slate-500">{user.deals} deals won</p>
                   </div>
-                  <span className="text-sm font-semibold text-accent-green">
+                  <span className="text-sm font-bold text-green-600 flex-shrink-0">
                     {formatCurrency(user.revenue)}
                   </span>
                 </div>
@@ -121,16 +204,30 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          <div className="glass-card p-6 bg-brand-500 text-white shadow-xl shadow-brand-500/20">
-            <h3 className="font-bold mb-2 flex items-center gap-2"><Info size={16}/> Antigravity CRM</h3>
-            <p className="text-sm text-white/80 mb-4">
-              Your "Deal 360", "Daily Reports", and "Manager Gantt View" modules are fully integrated and benchmarking against industry standards like Microsoft Dynamics and Odoo.
-            </p>
-            <Link href="/daily-report">
-              <button className="w-full py-2 bg-white text-brand-600 rounded-lg text-sm font-bold hover:shadow-lg transition-all">
-                Try Daily Reports
-              </button>
-            </Link>
+          {/* Quick actions card */}
+          <div className="card overflow-hidden"
+               style={{ background: 'linear-gradient(135deg, #0f1c3f 0%, #152466 100%)' }}>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Briefcase size={14} className="text-teal-400" />
+                <h3 className="font-semibold text-white text-sm">Antigravity ERP</h3>
+              </div>
+              <p className="text-xs leading-relaxed mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                Full-stack CRM + ERP with Production Gantt, RBAC, AI Copilot, Daily Reports, and Sales Pipeline — benchmarked against Odoo & HubSpot.
+              </p>
+              <div className="space-y-2">
+                <Link href="/production">
+                  <button className="w-full py-2 rounded-lg text-xs font-semibold bg-teal-500 text-white hover:bg-teal-400 transition-colors">
+                    View Production Board
+                  </button>
+                </Link>
+                <Link href="/copilot">
+                  <button className="w-full py-2 rounded-lg text-xs font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-colors border border-white/10">
+                    Launch AI Copilot
+                  </button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -10,12 +10,21 @@ import { addDays, format, differenceInDays, isSameDay, startOfDay } from 'date-f
 const STATUSES = ['pending', 'released', 'in_progress', 'qc', 'completed', 'cancelled'];
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-surface-300 text-surface-700',
-  released: 'bg-blue-200 text-blue-800',
-  in_progress: 'bg-brand-200 text-brand-800',
-  qc: 'bg-amber-200 text-amber-800',
-  completed: 'bg-green-200 text-green-800',
-  cancelled: 'bg-red-200 text-red-800',
+  pending:    'bg-slate-100 text-slate-600',
+  released:   'bg-blue-50 text-blue-700',
+  in_progress:'bg-teal-50 text-teal-700',
+  qc:         'bg-amber-50 text-amber-700',
+  completed:  'bg-green-50 text-green-700',
+  cancelled:  'bg-red-50 text-red-600',
+};
+
+const STATUS_BAR: Record<string, string> = {
+  pending:    '#94a3b8',
+  released:   '#3b82f6',
+  in_progress:'#0ab5a0',
+  qc:         '#f59e0b',
+  completed:  '#16a34a',
+  cancelled:  '#ef4444',
 };
 
 export default function ProductionPage() {
