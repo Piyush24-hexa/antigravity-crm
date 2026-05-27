@@ -18,6 +18,17 @@ const WORKSPACE_MODELS = new Set<Prisma.ModelName>([
   'Pipeline',
   'Stage',
   'FailedJob',
+  'Product',
+  'PriceBook',
+  'PriceBookEntry',
+  'Quote',
+  'QuoteLineItem',
+  'DealContact',
+  'Campaign',
+  'CampaignMember',
+  'AuditLog',
+  'DealStageHistory',
+  'Quota',
 ]);
 
 type MiddlewareParams = Prisma.MiddlewareParams;

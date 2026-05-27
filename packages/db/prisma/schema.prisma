@@ -44,6 +44,17 @@ model Workspace {
   aiUsage      AiUsage[]
   integrations Integration[]
 
+  products        Product[]
+  priceBooks      PriceBook[]
+  priceBookEntries PriceBookEntry[]
+  quotes          Quote[]
+  quoteLineItems  QuoteLineItem[]
+  dealContacts    DealContact[]
+  campaigns       Campaign[]
+  campaignMembers CampaignMember[]
+  auditLogs       AuditLog[]
+  dealStageHistory DealStageHistory[]
+  quotas          Quota[]
   @@map("workspaces")
 }
 
@@ -115,11 +126,12 @@ model Contact {
   activities Activity[]
   emails     Email[]
 
+  campaigns       CampaignMember[]
+  dealRoles       DealContact[]
   @@index([workspaceId])
   @@index([workspaceId, email])
   @@map("contacts")
 }
-
 model Company {
   id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   workspaceId        String   @map("workspace_id") @db.Uuid
@@ -160,6 +172,9 @@ model Company {
   country            String?  @db.VarChar(100)
   
   techStack          String[] @map("tech_stack") @db.VarChar(100)
+  parentCompanyId    String?  @map("parent_company_id") @db.Uuid
+  parentCompany      Company? @relation("CompanyHierarchy", fields: [parentCompanyId], references: [id])
+  childCompanies     Company[] @relation("CompanyHierarchy")
   customFields       Json     @default("{}") @map("custom_fields") @db.JsonB
   embedding          Unsupported("vector(1536)")?
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -246,6 +261,14 @@ model Deal {
   activities Activity[]
   emails     Email[]
 
+  forecastCategory String?  @map("forecast_category") @db.VarChar(50)
+  managerOverride  Decimal? @map("manager_override") @db.Decimal(15, 2)
+  overrideNote     String?  @map("override_note") @db.Text
+
+  dealContacts    DealContact[]
+  quotes          Quote[]
+  stageHistory    DealStageHistory[]
+
   @@index([workspaceId, stageId])
   @@index([workspaceId, ownerId])
   @@map("deals")
@@ -280,6 +303,12 @@ model Activity {
   scheduledAt           DateTime? @map("scheduled_at") @db.Timestamptz()
   completedAt           DateTime? @map("completed_at") @db.Timestamptz()
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  assigneeId            String?   @map("assignee_id") @db.Uuid
+  dueDate               DateTime? @map("due_date") @db.Timestamptz()
+  taskStatus            String?   @map("task_status") @db.VarChar(50)
+  reminderAt            DateTime? @map("reminder_at") @db.Timestamptz()
+  priority              String?   @db.VarChar(50)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact   Contact?  @relation(fields: [contactId], references: [id])
@@ -465,4 +494,195 @@ model FailedJob {
 
   @@index([workspaceId])
   @@map("failed_jobs")
+}
+
+
+// ---------------------------------------
+// SPRINT 1 ENTERPRISE UPGRADES
+// ---------------------------------------
+
+model Product {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  sku         String?  @db.VarChar(100)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  priceBooks  PriceBookEntry[]
+
+  @@index([workspaceId])
+  @@map("products")
+}
+
+model PriceBook {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  isStandard  Boolean  @default(false) @map("is_standard")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  entries   PriceBookEntry[]
+
+  @@index([workspaceId])
+  @@map("price_books")
+}
+
+model PriceBookEntry {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  priceBookId String   @map("price_book_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(15, 2)
+  currency    String   @default("USD") @db.VarChar(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  priceBook   PriceBook       @relation(fields: [priceBookId], references: [id], onDelete: Cascade)
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quoteLines  QuoteLineItem[]
+
+  @@index([workspaceId])
+  @@unique([priceBookId, productId])
+  @@map("price_book_entries")
+}
+
+model Quote {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  dealId      String   @map("deal_id") @db.Uuid
+  quoteNumber String   @map("quote_number") @db.VarChar(100)
+  status      String   @default("Draft") @db.VarChar(50)
+  validUntil  DateTime? @map("valid_until") @db.Timestamptz()
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deal       Deal            @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  lineItems  QuoteLineItem[]
+
+  @@index([workspaceId, dealId])
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId      String   @map("workspace_id") @db.Uuid
+  quoteId          String   @map("quote_id") @db.Uuid
+  priceBookEntryId String   @map("price_book_entry_id") @db.Uuid
+  quantity         Int      @default(1)
+  unitPrice        Decimal  @map("unit_price") @db.Decimal(15, 2)
+  discount         Decimal? @db.Decimal(5, 2)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace        Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  quote            Quote          @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  priceBookEntry   PriceBookEntry @relation(fields: [priceBookEntryId], references: [id])
+
+  @@index([workspaceId, quoteId])
+  @@map("quote_line_items")
+}
+
+model DealContact {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  dealId      String   @map("deal_id") @db.Uuid
+  contactId   String   @map("contact_id") @db.Uuid
+  role        String   @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deal      Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, dealId])
+  @@index([workspaceId, contactId])
+  @@unique([dealId, contactId])
+  @@map("deal_contacts")
+}
+
+model Campaign {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  type        String   @db.VarChar(100)
+  status      String   @db.VarChar(50)
+  startDate   DateTime? @map("start_date") @db.Timestamptz()
+  endDate     DateTime? @map("end_date") @db.Timestamptz()
+  budget      Decimal? @db.Decimal(15, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   CampaignMember[]
+
+  @@index([workspaceId])
+  @@map("campaigns")
+}
+
+model CampaignMember {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  campaignId  String   @map("campaign_id") @db.Uuid
+  contactId   String   @map("contact_id") @db.Uuid
+  status      String   @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaign  Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, campaignId])
+  @@index([workspaceId, contactId])
+  @@unique([campaignId, contactId])
+  @@map("campaign_members")
+}
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  tableName   String   @map("table_name") @db.VarChar(100)
+  recordId    String   @map("record_id") @db.Uuid
+  field       String   @db.VarChar(100)
+  oldVal      String?  @map("old_val") @db.Text
+  newVal      String?  @map("new_val") @db.Text
+  userId      String?  @map("user_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, tableName, recordId])
+  @@map("audit_logs")
+}
+
+model DealStageHistory {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  dealId      String   @map("deal_id") @db.Uuid
+  oldStageId  String?  @map("old_stage_id") @db.Uuid
+  newStageId  String   @map("new_stage_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deal      Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, dealId])
+  @@map("deal_stage_history")
+}
+
+model Quota {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  period      String   @db.VarChar(20)
+  target      Decimal  @db.Decimal(15, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId, period])
+  @@map("quotas")
 }
